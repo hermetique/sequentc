@@ -5,19 +5,41 @@ import Control.Monad.State
 a = Const "a"
 b = Const "b"
 c = Const "c"
+gamma = Env "gamma"
+delta = Env "delta"
 
-ex1 :: Jmt Prop
-ex1 = [a :=>: b, a] :|-: a :*: b
+ex1 :: Rule Prop
+ex1 = []
+      :---:
+      [a :=>: b, a] :|-: a :*: b
 
-test :: State (Rule Prop) ()
-test = do
-  apply (contraction [a :=>: b] a (a :*: b))
-  apply (exchg [a :=>: b, a] [a] (a :*: b))
-  apply (andI [a] a [a :=>: b, a] b)
+proof_ex1 = do
+  apply $ withEnv ("gamma", [a :=>: b]) $ contraction a (a :*: b)
+  apply $ withEnv ("gamma", [a :=>: b, a]) $ withEnv ("delta", [a]) $ (exchg (a :*: b))
+  apply $ withEnv ("gamma", [a]) $ withEnv ("delta", [a :=>: b, a]) $ (andI a b)
   apply (idty a)
-  apply (arrE [a :=>: b] [a] a b)
-  apply (idty (a :=>: b))
-  apply (idty a)
+  apply $ withEnv ("gamma", [a :=>: b]) $ withEnv ("delta", [a]) $ arrE a b
+  apply $ idty (a:=>:b)
+  apply $ idty a
   qed
 
-main = putStrLn  $ show $ snd $ runState test (prove ex1)
+-- gamma |- a    gamma |- b
+-- ------------------------
+-- gamma |- a x b
+
+andI' =
+    [[gamma] :|-: a,
+     [gamma] :|-: b]
+    :---:
+    [gamma] :|-: a :*: b
+
+proof_andI' = do
+  apply $ withEnv ("gamma", []) $ contraction gamma (a :*: b)
+  apply $ withEnv ("delta", [gamma]) $ andI a b
+  return ()
+
+ex2 = [gamma] :|-: a :*: b
+
+main = putStrLn  $ show $ map (uncurry derive) [(andI', proof_andI'),
+                                                (ex1, proof_ex1)]
+

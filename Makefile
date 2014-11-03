@@ -1,4 +1,4 @@
-main: main.hs il.hs ill.hs sequentc.hs
+main: il.hs ill.hs main.hs sequentc.hs
 	ghc --make main.hs
 
 clean:
